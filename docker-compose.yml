@@ -1,0 +1,164 @@
+# ============================================================
+# MedDeviceAgent Docker Compose
+# 医疗设备智能语音客服 Agent 平台 — 完整服务编排
+#
+# 启动: docker compose up -d
+# 停止: docker compose down
+# ============================================================
+
+version: "3.9"
+
+services:
+  # ========================================================
+  # FastAPI Application
+  # ========================================================
+  app:
+    build: .
+    container_name: svagent-app
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=development
+      - MYSQL_HOST=mysql
+      - REDIS_HOST=redis
+      - QDRANT_HOST=qdrant
+    env_file:
+      - .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./prompts:/app/prompts:ro
+      - ./logs:/app/logs
+
+  # ========================================================
+  # MySQL 8.0 — 业务数据 + Trace + Checkpoint
+  # ========================================================
+  mysql:
+    image: mysql:8.0
+    container_name: svagent-mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD:-changeme}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-med_device_agent}
+      MYSQL_CHARSET: utf8mb4
+      MYSQL_COLLATION: utf8mb4_unicode_ci
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --default-authentication-plugin=mysql_native_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================================================
+  # Redis 7 — 缓存 + 限流 + 分布式锁 + Celery Broker
+  # ========================================================
+  redis:
+    image: redis:7-alpine
+    container_name: svagent-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ========================================================
+  # Qdrant — 向量数据库
+  # ========================================================
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: svagent-qdrant
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ========================================================
+  # Celery Worker — 异步任务
+  # ========================================================
+  celery-worker:
+    build: .
+    container_name: svagent-celery-worker
+    command: celery -A app.tasks.celery_app worker --loglevel=info --concurrency=4
+    environment:
+      - APP_ENV=development
+      - MYSQL_HOST=mysql
+      - REDIS_HOST=redis
+      - QDRANT_HOST=qdrant
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - mysql
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+
+  # ========================================================
+  # Celery Beat — 定时任务调度
+  # ========================================================
+  celery-beat:
+    build: .
+    container_name: svagent-celery-beat
+    command: celery -A app.tasks.celery_app beat --loglevel=info
+    environment:
+      - APP_ENV=development
+      - REDIS_HOST=redis
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # ========================================================
+  # MinIO — 对象存储（文档、附件、音频）
+  # ========================================================
+  minio:
+    image: minio/minio:latest
+    container_name: svagent-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
+  redis_data:
+  qdrant_data:
+  minio_data:

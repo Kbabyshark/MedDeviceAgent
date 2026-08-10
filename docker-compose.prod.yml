@@ -1,0 +1,179 @@
+# ============================================================
+# MedDeviceAgent — 生产环境部署编排
+#
+# 启动: docker compose -f docker-compose.prod.yml up -d
+# 停止: docker compose -f docker-compose.prod.yml down
+# ============================================================
+
+version: "3.9"
+
+services:
+  app:
+    build: .
+    container_name: svagent-app-prod
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - APP_DEBUG=false
+      - MYSQL_HOST=mysql
+      - REDIS_HOST=redis
+      - QDRANT_HOST=qdrant
+    env_file:
+      - .env
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      qdrant:
+        condition: service_healthy
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "2"
+          memory: "2G"
+        reservations:
+          cpus: "1"
+          memory: "512M"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+    volumes:
+      - ./prompts:/app/prompts:ro
+      - ./logs:/app/logs
+    networks:
+      - svagent-net
+
+  mysql:
+    image: mysql:8.0
+    container_name: svagent-mysql-prod
+    ports:
+      - "127.0.0.1:3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-med_device_agent}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --max-connections=200
+      - --innodb-buffer-pool-size=512M
+    volumes:
+      - mysql_data:/var/lib/mysql
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: "1G"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - svagent-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: svagent-redis-prod
+    ports:
+      - "127.0.0.1:6379:6379"
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+      --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis_data:/data
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: "512M"
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    networks:
+      - svagent-net
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: svagent-qdrant-prod
+    ports:
+      - "127.0.0.1:6333:6333"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: "1G"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - svagent-net
+
+  celery-worker:
+    build: .
+    container_name: svagent-celery-worker-prod
+    command: celery -A app.tasks.celery_app worker --loglevel=warning --concurrency=4
+    environment:
+      - APP_ENV=production
+      - MYSQL_HOST=mysql
+      - REDIS_HOST=redis
+      - QDRANT_HOST=qdrant
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - mysql
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "1"
+          memory: "1G"
+    networks:
+      - svagent-net
+
+  celery-beat:
+    build: .
+    container_name: svagent-celery-beat-prod
+    command: celery -A app.tasks.celery_app beat --loglevel=warning
+    environment:
+      - APP_ENV=production
+      - REDIS_HOST=redis
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    restart: always
+    networks:
+      - svagent-net
+
+volumes:
+  mysql_data:
+    driver: local
+  redis_data:
+    driver: local
+  qdrant_data:
+    driver: local
+
+networks:
+  svagent-net:
+    driver: bridge

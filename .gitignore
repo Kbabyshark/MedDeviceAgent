@@ -1,0 +1,73 @@
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# Virtualenv
+venv/
+.venv/
+env/
+
+# Node
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Qdrant 本地数据
+.qdrant_data/
+
+# Models (语音模型文件，体积大，git 忽略)
+models/
+*.pt
+*.onnx
+*.bin
+*.safetensors
+
+# Uploads
+uploads/
+data/
+output/
+temp/
+
+# Logs
+logs/
+*.log
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# Alembic
+alembic/versions/*.pyc
+
+# Docker
+.docker/
+
+# Test
+.pytest_cache/
+.coverage
+htmlcov/
+
+# MyPy
+.mypy_cache/
+
+# CLAUDE.md 必须纳入版本管理
+!CLAUDE.md

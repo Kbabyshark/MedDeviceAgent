@@ -1,0 +1,37 @@
+本文件为项目最原始的文件，所有文件都是根据此文件生成，这里的内容是最核心最权威的标准。
+智能语音客服
+技术柱:Python、FastAP1、LangGraph, LangChain、RAG.Embedding、向量数据库、Redis、MySQL、WebSocket、ASR/TTS、LLM API.Tool Calling、Prompt Engineering、Guardrails、Trace/Eval、Model Routing
+项目描述:
+基于FastAP1+LangGraph.构建医疗设备智能客服Agent平台，将传统RAG问答升级为“知识检索＋工具调用＋用户确认＋安全拦截+ Trace可观测”的业务型Agent Workflowe
+系统支持设备知识问答、说明书/FAQ检索、故障码解释、售后政策问答、保修查询、设备绑定查询、故障排查、工单草稿生成、创建报修工单、转人工和医疗高风险问题安全拦截。整体采用LangGraph多节点编排，将输入安全检查、意图识别、上下文加载、RAG检索、工具执行、用户确认、回答生成、输出安全检查、摘要压缩和长期记忆更新拆分为可追踪、可回退、可评估的Agent流程
+工作内容:
+1、设计医疗设备客服Agent Workflow: 基于LangGraph将客服链路拆分为输入安全检查、意图识别、RAG检索、工具调用、用户
+确认。回答生成、输出安全检查、Trace记录、摘要压缩和长期记忆更新等节点，避免传统单Prompt问答不可控的问题。
+2、构建意图识别与路由体系:设计AC自动机规则层＋LLM兜底的意图识别方案，对保修查询、报修工单、转人工、故障码、售后政
+策和医疗高风险词等高频意图进行快速匹配;未命中或多意图冲突时再走LLM结构化识别，降低模型调用成本和前置延迟。
+3、优化企业知识库RAG链路:对说明书FAQ、故障码、售后政策、云平台操作文档等资料进行Chunk切分、Embe dding 入库和
+Top-K检索,通过device_type. doc_type、version、permission 等metadata标签进行过滤，降低跨设备、跨文档、跨权限误召回。
+4、设计双向量库上下文方案:将企业知识库与用户历史Summary 分开存储，企业知识库存放公共产品资料。用户 Summary 向量库
+存放个人历史摘要;用户历史检索必须按user_id做metadata过滤，冠免不同用户之间的上下文串扰。
+5、设计 Query Router检索路由优化:早期版本为保证召回同时检索企业知识库和用户历史Summary，后续通过Trace发现存在重
+复检索和Prompt 冗余，优化为根据intent / route_type 动态选择企业知识库、用户历史摘要、工具调用或直接回答，使平均上下文长度降低约309%
+6、设计 Prompt统一调度与模型路由机制:将intent_classify、safety_check、query_rewrite、rag_answer、
+troubleshooting answer,tiket_ drat、summary、memory_extract等 Prompt模板统一管理，根据task_type、risk_leveL上下文长度和成本策陪选择轻量模型、中等模型或强模型。
+7、构建Tool Registry +Tool Executor工具治理机制:将保修查询、设备绑定查询、创建工单、转人工等业务能力封装为Agent
+可调用工具;模型只返回工具调用意图和参数,真正执行前统一进行参数Schema校验、权限检查、风险等级判断、用户确认、Redis分布式锁和 MySQL等兜底。
+8、设计 Human-in-the-loop高风险动作流程:对创建工单、转人工等写操作先生成工单草稿或转人工确认话术,并将 pending.action写入State;用户确认后才进入Tool Executor执行业务接口,避免模型直接触发高风险动作。
+9、设计上下文与长期记忆管理方案:使用LangGraph Checkpoint保存当前session的 State;使用Store保存用户当前有效长期记亿,使用MySQL保存完整对话、会话摘要、Trace和记忆版本;长对话场景通过state.summary +最近消息控制Prompt 长度,
+降低上下文能胀风险。
+10、设计Redis,工程保护机制:在FastAPI 入口基于rate_limit:/action_typek:luser_id])做接口限流，防止高频请求击穿模型服女创南于单、转人工等写操作前基于locklaction_type]:user_id:device_Sn)加分布式锁，防止重复提交、重复转人工和并发创建工单—
+11、设计医疗设备场景Guardrails:针对医疗诊断、治疗建议、用药建议、隐私越权、无依据承诺等风险迸行输入和输出拦载;高风险问题进入safe_reply 分支或引导转人工,降低医疗客服场景下的合规风险。
+12、构建 Trace / Eval可观测链路:为每次请求生成trace_d，记录节点输入输出、RAG检索结果、metadata过滤条件、工具调
+用参数、权限检查结果、模型路由、Prompt token、节点耗时和错误信息;支持按trace_id回放完整链路，定位检索错误、工真错误、权限措误、Prompt问题和模型回答问题。
+项目成果:
+1完成医疗设备智能客服Agent核心 Workflow 设计，支持设备知识问答、故阵排查、保修查询、工单草稿、创建工单、转人工和高
+风险向题安全拦截等业务闭环。
+2将传统RAG问答升级为多节点、多分支、可调用工具、可追踪、可回退、可评估的业务型Agent流程。
+3通过 AC自动机规则层+LLM兜底降低高频明确意图的模型调用次数;高频意图场景模型调用次数降低约35%，通过 Query
+Router读少无效向量库检索和历史摘要冗余。
+4通过Redis限流、分布式锁、用户确认等兜底，降低高频请求、重复创建工单和模型越权调用业务接口的风险。
+5.建立 Trace / Eval链路,支持按 trace_id复盘意图识别、RAG检索、工具调用、权限检查、模型选择、Prompt拼接和最终回答过
+程，无效向量检索和上下文冗余减少约30%，为后续优化响应耗时、RAG命中率、工具调用正确率和拒答准确率提供依据

@@ -1,0 +1,11 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* 自定义滚动条 */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+
+/* 消息动画 */
+.message-enter-active { transition: all 0.2s ease; }
+.message-enter-from { opacity: 0; transform: translateY(8px); }

@@ -1,0 +1,75 @@
+"""
+Alembic 环境配置 — 异步迁移。
+
+使用方式：
+    cd MedDeviceAgent
+    alembic revision --autogenerate -m "描述"
+    alembic upgrade head
+    alembic downgrade -1
+"""
+
+from __future__ import annotations
+
+from logging.config import fileConfig
+
+from alembic import context
+from sqlalchemy import engine_from_config, pool
+
+from app.core.config import get_settings
+from app.models.base import Base
+
+# 导入所有模型以注册到 Base.metadata
+import app.models.user  # noqa: F401
+import app.models.device  # noqa: F401
+import app.models.ticket  # noqa: F401
+import app.models.conversation  # noqa: F401
+import app.models.memory  # noqa: F401
+import app.models.knowledge  # noqa: F401
+import app.models.trace  # noqa: F401
+import app.models.rbac  # noqa: F401
+
+config = context.config
+
+# 覆盖 alembic.ini 中的数据库 URL
+settings = get_settings()
+config.set_main_option("sqlalchemy.url", settings.mysql.database_url_sync)
+
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+target_metadata = Base.metadata
+
+
+def run_migrations_offline() -> None:
+    """离线模式：生成 SQL 脚本（不连接数据库）。"""
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def run_migrations_online() -> None:
+    """在线模式：连接数据库执行迁移。"""
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection,
+            target_metadata=target_metadata,
+        )
+        with context.begin_transaction():
+            context.run_migrations()
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()

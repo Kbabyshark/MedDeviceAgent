@@ -1,0 +1,94 @@
+[build-system]
+requires = ["setuptools>=75", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "prompts*"]
+
+[project]
+name = "smart-voice-agent"
+version = "0.1.0"
+description = "医疗设备智能语音客服 Agent 平台"
+requires-python = ">=3.11,<3.12"
+
+dependencies = [
+    # Web Framework
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.32.0",
+    "websockets>=13.0",
+    "sse-starlette>=2.1.0",
+
+    # Data
+    "sqlalchemy[asyncio]>=2.0.35",
+    "asyncmy>=0.2.10",
+    "alembic>=1.14.0",
+    "redis[hiredis]>=5.2.0",
+    "qdrant-client>=1.12.0",
+
+    # Agent
+    "langgraph>=0.2.50",
+    "langchain>=0.3.0",
+    "langchain-deepseek>=0.1.0",
+
+    # RAG
+    "langchain-text-splitters>=0.3.0",
+    "openai>=1.55.0",           # Embedding API 兼容
+
+    # Task Queue
+    "celery[redis]>=5.4.0",
+
+    # Auth
+    "python-jose[cryptography]>=3.3.0",
+    "bcrypt>=4.2.0",
+
+    # Validation & Config
+    "pydantic>=2.9.0",
+    "pydantic-settings>=2.6.0",
+
+    # Observability
+    "structlog>=24.4.0",
+
+    # Utilities
+    "httpx>=0.28.0",
+    "python-multipart>=0.0.12",
+    "pyyaml>=6.0.2",
+    "pyahocorasick>=2.1.0",
+
+    # Voice (ASR/TTS)
+    "numpy>=1.26",
+    "soundfile>=0.12",
+    "funasr>=1.0",
+    "cosyvoice",
+    "minio>=7.2",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-asyncio>=0.24.0",
+    "pytest-timeout>=2.3.0",
+    "httpx>=0.28.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "C4", "SIM"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+timeout = 30
