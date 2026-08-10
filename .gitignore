@@ -69,5 +69,5 @@ htmlcov/
 # MyPy
 .mypy_cache/
 
-# CLAUDE.md 必须纳入版本管理
-!CLAUDE.md
+# CLAUDE.md 不纳入版本管理
+CLAUDE.md
