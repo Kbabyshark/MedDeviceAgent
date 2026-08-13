@@ -99,26 +99,6 @@ class EmbeddingSettings(BaseSettings):
     api_key: str = ""
 
 
-class ASRSettings(BaseSettings):
-    """FunASR + SenseVoice 配置。"""
-
-    model_config = SettingsConfigDict(env_prefix="ASR_", **_ENV_FILE)  # type: ignore[arg-type]
-
-    model_dir: str = "./models/sensevoice"
-    model_name: str = "iic/SenseVoiceSmall"
-    device: str = "cuda:0"
-
-
-class TTSSettings(BaseSettings):
-    """CosyVoice 2 配置。"""
-
-    model_config = SettingsConfigDict(env_prefix="TTS_", **_ENV_FILE)  # type: ignore[arg-type]
-
-    model_dir: str = "./models/cosyvoice2"
-    model_name: str = "CosyVoice-300M-SFT"
-    device: str = "cuda:0"
-
-
 class JWTSettings(BaseSettings):
     """JWT 认证配置。"""
 
@@ -147,7 +127,7 @@ class MinioSettings(BaseSettings):
     endpoint: str = "127.0.0.1:9000"
     access_key: str = "minioadmin"
     secret_key: str = "minioadmin"
-    bucket: str = "smart-voice-agent"
+    bucket: str = "med_device_agent"
     secure: bool = False
 
 
@@ -191,8 +171,6 @@ class Settings(BaseSettings):
     qdrant: QdrantSettings = QdrantSettings()
     deepseek: DeepSeekSettings = DeepSeekSettings()
     embedding: EmbeddingSettings = EmbeddingSettings()
-    asr: ASRSettings = ASRSettings()
-    tts: TTSSettings = TTSSettings()
     jwt: JWTSettings = JWTSettings()
     rate_limit: RateLimitSettings = RateLimitSettings()
     minio: MinioSettings = MinioSettings()

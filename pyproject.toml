@@ -10,7 +10,7 @@ include = ["app*", "prompts*"]
 name = "smart-voice-agent"
 version = "0.1.0"
 description = "医疗设备智能语音客服 Agent 平台"
-requires-python = ">=3.11,<3.12"
+requires-python = ">=3.11,<3.13"
 
 dependencies = [
     # Web Framework
@@ -28,12 +28,22 @@ dependencies = [
 
     # Agent
     "langgraph>=0.2.50",
+    "langgraph-checkpoint-mysql>=4.0",   # MySQL Checkpoint 后端
     "langchain>=0.3.0",
     "langchain-deepseek>=0.1.0",
 
     # RAG
     "langchain-text-splitters>=0.3.0",
     "openai>=1.55.0",           # Embedding API 兼容
+    "sentence-transformers>=3.0",
+    "langsmith>=0.1",
+    "pdfplumber>=0.11",
+    "pymysql>=1.1",
+    "aiohttp>=3.10",
+    "jieba>=0.42",
+    "python-docx>=1.1",
+    "openpyxl>=3.1",
+    "jsonschema>=4.23",
 
     # Task Queue
     "celery[redis]>=5.4.0",
@@ -52,14 +62,11 @@ dependencies = [
     # Utilities
     "httpx>=0.28.0",
     "python-multipart>=0.0.12",
+    "python-dotenv>=1.0",
     "pyyaml>=6.0.2",
     "pyahocorasick>=2.1.0",
 
-    # Voice (ASR/TTS)
-    "numpy>=1.26",
-    "soundfile>=0.12",
-    "funasr>=1.0",
-    "cosyvoice",
+    # Storage
     "minio>=7.2",
 ]
 
@@ -92,3 +99,5 @@ ignore_missing_imports = true
 asyncio_mode = "auto"
 testpaths = ["tests"]
 timeout = 30
+
+

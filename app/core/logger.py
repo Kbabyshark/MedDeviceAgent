@@ -22,7 +22,7 @@ def setup_logging() -> None:
     # ---- 压制第三方库的 console 噪音 ----
     os.environ.setdefault("TQDM_DISABLE", "1")
     os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
-    for _lib in ("funasr", "modelscope", "sentence_transformers", "transformers",
+    for _lib in ("sentence_transformers", "transformers",
                  "httpx", "httpcore", "urllib3", "aiohttp", "asyncio"):
         logging.getLogger(_lib).setLevel(logging.WARNING)
 

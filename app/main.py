@@ -15,12 +15,10 @@ from __future__ import annotations
 import os as _os
 _os.environ.setdefault("TQDM_DISABLE", "1")
 _os.environ.setdefault("HF_HUB_DISABLE_PROGRESS_BARS", "1")
-_os.environ.setdefault("FUNASR_DISABLE_UPDATE", "1")
 _os.environ.setdefault("TOKENIZERS_PARALLELISM", "false")
 
 import logging as _logging
 for _lib in (
-    "funasr", "modelscope", "modelscope_hub", "modelscope_hub.download",
     "sentence_transformers", "transformers", "transformers.modeling_utils",
     "httpx", "httpcore", "urllib3", "aiohttp", "asyncio",
     "uvicorn", "uvicorn.access", "uvicorn.error", "fastapi",

@@ -29,8 +29,6 @@ _PATH_TIMEOUTS: dict[str, int] = {
     "/api/v1/admin/knowledge/upload": 120,
     "/api/v1/admin/knowledge/reindex": 300,
     "/api/v1/ws/chat": 3600,  # WebSocket 由自己的超时管理
-    "/api/v1/tts/stream": 300,
-    "/api/v1/tts": 300,
     "/api/health": 5,
 }
 

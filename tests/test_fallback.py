@@ -93,14 +93,6 @@ def test_rate_limit_action_extraction():
     assert _get_action_from_path("/api/v1/ticket/draft") == "create_ticket"
 
 
-def test_tts_sentence_split():
-    from app.voice.tts import _split_sentences
-    text = "设备显示E101故障码。请检查传感器连接。如有疑问请联系人工客服。"
-    sentences = _split_sentences(text)
-    assert len(sentences) == 3
-    assert "传感器" in sentences[1]
-
-
 def test_parser_text():
     import pytest
     from app.rag.parser import DocumentParser
